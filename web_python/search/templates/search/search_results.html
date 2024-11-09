@@ -1,0 +1,94 @@
+{% extends "base.html" %}
+
+{% load static %}
+
+{% block content %}
+<link rel="stylesheet"  href="{% static 'search/css/search.css' %}">
+<div class="search-container">
+    <h3 class="search-title">
+        Kết quả tìm kiếm cho từ khoá <span class="highlight-query">{{ query }}</span>
+    </h3>
+    <div class="history-link">
+        <a href="{% url 'search_history' %}" class="btn btn-secondary">Xem lịch sử tìm kiếm</a>
+    </div>
+    {% if no_results_message %}
+        <p class="no-results-message">{{ no_results_message }}</p>
+    {% endif %}
+
+    {% if suggestion and not results.subject %}
+        <p class="suggestion-text">Hiển thị tìm kiếm với từ khóa "<a href="?q={{ suggestion }}">{{ suggestion }}</a>"</p>
+    {% endif %} 
+
+    <!-- Bộ lọc loại nội dung -->
+    <div class="filter-options">            
+        <form method="get" action="{% url 'search' %}" id="filterForm">
+            <input type="hidden" name="q" value="{{ query }}">
+                <select name="content_type" class="filter-select" onchange="document.getElementById('filterForm').submit();">
+                    <option value="all" {% if content_type == 'all' or not content_type %}selected{% endif %}>Tất cả</option>
+                    <option value="materials" {% if content_type == 'materials' %}selected{% endif %}>Tài liệu</option>
+                    <option value="videos" {% if content_type == 'videos' %}selected{% endif %}>Bài giảng</option>
+                </select>
+            </form>
+        </div>
+
+    <!-- Kết quả tìm kiếm dạng lưới -->
+    <div class="result-grid">
+        {% for item in results %}
+            <div class="result-card">
+                <div class="card-image">
+                    {% if item.get_type == 'video' %}
+                        <img src="{% static 'search/images/video_placeholder.png' %}" alt="Video">
+                    {% elif item.get_type == 'material' %}
+                        <img src="{% static 'search/images/material_placeholder.png' %}" alt="Material">
+                    {% else %}
+                        <img src="{% static 'search/images/default_placeholder.png' %}" alt="Default">
+                    {% endif %}
+                </div>
+                <div class="card-content">
+                    <h3 class="result-title">{{ item.title }}</h3>
+                    <p class="result-description">{{ item.description }}</p>
+                </div>
+                <div class="card-link">
+                    {% if item.get_type == 'video' %}
+                        <a href="{{ item.iframe }}" class="view-link">Xem chi tiết</a>
+                    {% else %}
+                        <a href="{{ item.url }}" class="view-link">Xem chi tiết</a>
+                    {% endif %}
+                </div>
+            </div>
+        {% endfor %}
+    </div>
+    
+    
+    <!-- Khu vực hiển thị iframe -->
+    <div id="video-modal" style="display: none;">
+        <iframe id="video-iframe" src="" frameborder="0" allowfullscreen></iframe>
+    </div>
+    
+    <script>
+        function showVideo(url) {
+            document.getElementById('video-iframe').src = url;
+            document.getElementById('video-modal').style.display = 'block';
+        }
+    </script>
+    
+    
+
+    <!-- Phân trang -->
+    <div class="pagination">
+        {% if results.has_previous %}
+            <a href="?q={{ query }}&content_type={{ content_type }}&page=1">Đầu</a>
+            <a href="?q={{ query }}&content_type={{ content_type }}&page={{ results.previous_page_number }}">Trước</a>
+        {% endif %}
+        <span>{{ results.number }}</span>
+        {% if results.has_next %}
+            <a href="?q={{ query }}&content_type={{ content_type }}&page={{ results.next_page_number }}">Sau</a>
+            <a href="?q={{ query }}&content_type={{ content_type }}&page={{ results.paginator.num_pages }}">Cuối</a>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Tích hợp file JavaScript -->
+<script src="{% static 'search/js/search_autocomplete.js' %}"></script>
+
+{% endblock %}
